@@ -23,12 +23,15 @@ trait Jmh extends ScalaModule {
     val dest = T.ctx.dest
     val (sourcesDir, _) = generateBenchmarkSources()
     val sources = os.walk(sourcesDir).filter(os.isFile)
-    os.proc("javac",
-       sources.map(_.toString),
-       "-cp",
-       (runClasspath() ++ generatorDeps()).map(_.path.toString).mkString(":"),
-       "-d",
-       dest).call(dest)
+    os.proc(
+        "javac",
+        sources.map(_.toString),
+        "-cp",
+        (runClasspath() ++ generatorDeps()).map(_.path.toString).mkString(":"),
+        "-d",
+        dest
+      )
+      .call(dest)
     PathRef(dest)
   }
 
