@@ -1,8 +1,8 @@
 package ustats
 
-import java.util.concurrent.atomic.AtomicLongArray
+import java.util.concurrent.atomic.DoubleAdder
 
-class Gauge(data: AtomicLongArray, idx: Int) {
-  def +=(n: Int) = data.addAndGet(idx, n)
-  def -=(n: Int) = data.addAndGet(idx, -n)
+class Gauge(private val adder: DoubleAdder) extends AnyVal {
+  def +=(n: Int) = adder.add(n)
+  def -=(n: Int) = adder.add(-n)
 }

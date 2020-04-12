@@ -2,16 +2,13 @@ package ustats
 
 import java.util.concurrent.TimeUnit
 
-import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Mode, OutputTimeUnit}
-import org.openjdk.jmh.annotations.State
-import org.openjdk.jmh.annotations.Scope
+import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Mode, OutputTimeUnit, Scope, State}
 
 @State(Scope.Benchmark)
 class state {
   val collector = new Stats()
 
-  val foo = collector.counter()
-  var x: Long = 0
+  val counter = collector.counter()
 }
 
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -19,16 +16,9 @@ class state {
 class TestCounter {
 
   @Benchmark
-  def nativeCounter(state: state): Unit = state.x += 1
-
-  @Benchmark
-  def counter(state: state): Unit = state.foo += 1
+  def counter(state: state): Unit = state.counter += 1
 
   @Benchmark
   def metrics(state: state): Unit = state.collector.metrics
-
-
-  //@Benchmark
-  //def counter(state: state): Unit = state.foo += 1
 
 }

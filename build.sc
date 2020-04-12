@@ -8,7 +8,7 @@ object ustats extends ScalaModule with ScalafmtModule {
     ivy"org.scala-lang:scala-reflect:${scalaVersion()}",
     ivy"com.lihaoyi::sourcecode:0.2.1"
   )
-  object test extends Tests {
+  object test extends Tests with ScalafmtModule {
     def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.4")
     def testFrameworks = Seq("utest.runner.Framework")
   }

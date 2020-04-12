@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicLongArray
 import java.util.concurrent.atomic.AtomicIntegerArray
 import java.io.OutputStream
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.atomic.DoubleAdder
 
 /** A memory-efficient, concurrent-friendly metrics collection interface.
   *
@@ -12,20 +13,19 @@ import java.io.ByteArrayOutputStream
   * @param BlockSize Metrics are stored in a linked list of arrays ahich are
   *                  allocated on demand. The size of the arrays in each block
   *                  is controlled by this parameter. It does not need to be
-  *                  changed in regular usage, but can be tuned to a larger
-  *                  value, should you have lots of metrics.
+  *                  changed for regular use, but can be tuned to a larger
+  *                  value, should you have many metrics.
   */
 class Stats(prefix: String = "", BlockSize: Int = 32) {
 
-  // For fast access and a leightweight memory footprint, all data is stored
-  // as an atomic collection rather than a collection of atomics.
-  // Since the atomic collection is an array, it must have a fixed size. However,
-  // metrics may be added on-the-fly at runtime, hence the array is logically
-  // split into a linked list of blocks that are added on demand.
+  // For fast access and a light memory footprint, all data is stored as chunks
+  // of contiguous DoubleAdder arrays. DoubleAdders (as opposed to AtomicDoubles)
+  // are used to minimize contention when several threads update the same metric
+  // concurrently.
   private class Block {
     @volatile var next: Block = null
     val metrics = new Array[String](BlockSize)
-    val data = new AtomicLongArray(new Array[Long](BlockSize))
+    val data = Array.fill[DoubleAdder](BlockSize)(new DoubleAdder)
     @volatile var i = 0 // next index to fill
   }
   private var curr = new Block
@@ -37,19 +37,19 @@ class Stats(prefix: String = "", BlockSize: Int = 32) {
     * called. This can lead to inconsistent reads where, while printing metrics
     * to the output stream, latter metrics are updated to a new value while an
     * old value from a previous metric has already been printed.
-    * Nevertheless, these inconsistent reads offer oncreased performance and are
+    * Nevertheless, these inconsistent reads offer increased performance and are
     * acceptable for two reasons:
     * 1) metrics may only ever be added; they can never be removed
     * 2) atomic reads are not important for the purpose of metrics collection
     */
-  def writeMetricsTo(out: OutputStream): Unit = { // not synchronized
+  def writeMetricsTo(out: OutputStream): Unit = {
     var block = head
     while (block != null) {
       var i = 0
       while (i < block.i) {
         out.write(block.metrics(i).getBytes("utf-8"))
         out.write(32) // space
-        out.write(block.data.get(i).toString().getBytes("utf-8"))
+        out.write(block.data(i).sum().toString().getBytes("utf-8"))
         out.write(10) // newline
         i += 1
       }
@@ -58,7 +58,7 @@ class Stats(prefix: String = "", BlockSize: Int = 32) {
     out.flush()
   }
 
-  /** Get metrics as they are right now.
+  /** Show metrics as they are right now.
     *
     * See also writeMetricsTo() for a note on consistency.
     */
@@ -71,10 +71,10 @@ class Stats(prefix: String = "", BlockSize: Int = 32) {
 
   /** Add a metric manually.
     *
-    * This is a low-level escape hatch that should be used only is no other
+    * This is a low-level escape hatch that should be used only when no other
     * functions apply.
     */
-  def addMetric(name: String): (AtomicLongArray, Int) = synchronized {
+  def addMetric(name: String): DoubleAdder = synchronized {
     if (curr.i >= BlockSize) {
       val b = new Block
       curr.next = b
@@ -84,18 +84,18 @@ class Stats(prefix: String = "", BlockSize: Int = 32) {
       val i = curr.i
       curr.metrics(i) = name
       curr.i += 1
-      (curr.data, i)
+      curr.data(i)
     }
   }
 
   /** Create and register counter with a given name and labels.
     *
     * The final metrics name will be composed of the passed name plus any labels,
-    * according to the promentheus syntax.
+    * according to the prometheus syntax.
     */
   def namedCounter(name: String, labels: (String, Any)*): Counter = {
-    val (arr, idx) = addMetric(util.labelify(name, labels))
-    new Counter(arr, idx)
+    val adder = addMetric(util.labelify(name, labels))
+    new Counter(adder)
   }
 
   /** Create and register a counter whose name is automatically derived from the
@@ -117,12 +117,60 @@ class Stats(prefix: String = "", BlockSize: Int = 32) {
   }
 
   def namedGauge(name: String, labels: (String, Any)*): Gauge = {
-    val (arr, idx) = addMetric(util.labelify(name, labels))
-    new Gauge(arr, idx)
+    val adder = addMetric(util.labelify(name, labels))
+    new Gauge(adder)
   }
 
   def gauge(labels: (String, Any)*)(implicit name: sourcecode.Name): Gauge = {
-    namedGauge(prefix + name.value, labels: _*)
+    namedGauge(util.snakify(prefix + name.value), labels: _*)
+  }
+
+  def namedHistogram(
+      name: String,
+      buckets: BucketDistribution,
+      labels: (String, Any)*
+  ): Histogram = {
+    val buckets0 = buckets.buckets.sorted
+    require(
+      labels.forall(_._1 != "le"),
+      "histograms may not contain the label \"le\""
+    )
+    require(buckets0.size >= 1, "historams must have at least one bucket")
+    require(buckets0.forall(!_.isNaN()), "histograms may not have NaN buckets")
+
+    val buckets1 = if (buckets0.last == Double.PositiveInfinity) {
+      Array.from(buckets0)
+    } else {
+      Array.from(buckets0 ++ Seq(Double.PositiveInfinity))
+    }
+    val adders = buckets1.map { bucket =>
+      val label = if (bucket.isPosInfinity) {
+        "+Inf"
+      } else {
+        bucket
+      }
+      addMetric(util.labelify(name + "_bucket", labels ++ Seq("le" -> label)))
+    }
+    new Histogram(
+      buckets1,
+      adders,
+      addMetric(util.labelify(name + "_count", labels)),
+      addMetric(util.labelify(name + "_sum", labels))
+    )
+  }
+
+  def histogram(buckets: BucketDistribution, labels: (String, Any)*)(
+      implicit name: sourcecode.Name
+  ) = {
+    namedHistogram(util.snakify(prefix + name.value), buckets, labels: _*)
+  }
+
+  def histogram(labels: (String, Any)*)(implicit name: sourcecode.Name) = {
+    namedHistogram(
+      util.snakify(prefix + name.value),
+      BucketDistribution.Default,
+      labels: _*
+    )
   }
 
 }

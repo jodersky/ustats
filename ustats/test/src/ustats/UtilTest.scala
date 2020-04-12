@@ -4,7 +4,7 @@ import util._
 import utest._
 
 object UtilTest extends TestSuite {
-  val tests = Tests{
+  val tests = Tests {
     test("snakify") {
       snakify("helloWorld") ==> "hello_world"
       snakify("hello_world") ==> "hello_world"
