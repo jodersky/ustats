@@ -10,6 +10,17 @@ Prometheus.
 - efficiency: *light memory footprint and extremely fast, optimized for
   concurrent systems*
 
+## Getting Started
+
+ustats is available from maven central (for Scala 2.13). Add its coordinates to
+your build config:
+
+- mill: `ivy"io.crashbox::ustats:<latest_version>"`
+- sbt: `"io.crashbox" %% "ustats" % "<latest_version>"`
+
+where `<latest_version>` is
+[![latest_version](https://index.scala-lang.org/jodersky/ustats/ustats/latest.svg)](https://index.scala-lang.org/jodersky/ustats/ustats)
+
 ## Examples
 
 Basic example, create a counter using the default collector:
