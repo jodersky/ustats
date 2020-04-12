@@ -1,7 +1,5 @@
 package ustats
 
-import java.util.concurrent.atomic.AtomicLongArray
-import java.util.concurrent.atomic.AtomicIntegerArray
 import java.io.OutputStream
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.atomic.DoubleAdder
@@ -158,6 +156,9 @@ class Stats(prefix: String = "", BlockSize: Int = 32) {
       addMetric(util.labelify(name + "_sum", labels))
     )
   }
+
+  def namedHistogram(name: String, labels: (String, Any)*): Histogram =
+    namedHistogram(name, BucketDistribution.Default, labels: _*)
 
   def histogram(buckets: BucketDistribution, labels: (String, Any)*)(
       implicit name: sourcecode.Name

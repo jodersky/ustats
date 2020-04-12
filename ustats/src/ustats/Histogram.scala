@@ -21,19 +21,19 @@ class Histogram(
     sum.add(value)
   }
 
-  def time[A](fct: () => A): A = {
+  def time[A](fct: => A): A = {
     val now = System.nanoTime()
-    val result = fct()
+    val result = fct
     val elapsedSeconds = (System.nanoTime - now) / 1e9
     add(elapsedSeconds)
     result
   }
 
   def timeAsync[A](
-      fct: () => Future[A]
+      fct: => Future[A]
   )(implicit ec: ExecutionContext): Future[A] = {
     val now = System.nanoTime()
-    val result = fct()
+    val result = fct
     result.onComplete(_ => add((System.nanoTime - now) / 1e9))
     result
   }
