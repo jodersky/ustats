@@ -75,7 +75,7 @@ is imperative that updates be fast and avoid contention as much as possible.
 ustats achieves this by using `java.util.concurrent.atomic.DoubleAdder`s to
 store all metrics.
 
-Here are some benchmarks obtained on a laptop on an Intel Core i7-8550U CPU,
+Here are some benchmarks obtained on a laptop with an Intel Core i7-8550U CPU,
 1.80GHz base frequency with 4GHz turbo, 4 cores / 8 threads.
 
 ```
@@ -93,3 +93,8 @@ Benchmark            Mode  Cnt     Score     Error  Units
 TestCounter.counter  avgt   20   156.438 ±   3.749  ns/op
 TestCounter.metrics  avgt   20  3860.640 ± 138.861  ns/op
 ```
+
+As shown, millions of updates per second are possible on consumer-grade
+hardware, even with heavy concurrent access. Also, tens of thousands of metric
+exports per second are possible (although metrics are typically read much less
+frequently, usually once every few seconds).
