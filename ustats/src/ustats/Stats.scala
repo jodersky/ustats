@@ -174,4 +174,19 @@ class Stats(prefix: String = "", BlockSize: Int = 32) {
     )
   }
 
+  /** A pseudo-metric used to expose application information in labels.
+    *
+    * E.g.
+    * {{{
+    * info("version" -> "0.1.0", "commit" -> "deadbeef")
+    * }}}
+    * will create the metric
+    * {{{
+    * build_info{version="0.1.0", commit="deadbeef"} 1.0
+    * }}}
+    * Note that the actual value will always be 1.
+    */
+  def info(properties: (String, Any)*): Unit =
+    addMetric(util.labelify("build_info", properties)).add(1)
+
 }
