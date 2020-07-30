@@ -2,12 +2,8 @@ import $file.jmh
 import jmh.Jmh
 import mill._, scalalib._, scalafmt._, publish._
 
-object ustats extends ScalaModule with ScalafmtModule with PublishModule {
-  def scalaVersion = "2.13.1"
-  def ivyDeps = Agg(
-    ivy"com.lihaoyi::sourcecode:0.2.1"
-  )
-  def publishVersion = "0.0.1"
+trait Publish extends PublishModule {
+  def publishVersion = "0.1.0"
   def pomSettings = PomSettings(
     description = "Simple metrics collection",
     organization = "io.crashbox",
@@ -18,14 +14,39 @@ object ustats extends ScalaModule with ScalafmtModule with PublishModule {
       Developer("jodersky", "Jakob Odersky", "https://github.com/jodersky")
     )
   )
+}
+
+object ustats extends ScalaModule with ScalafmtModule with Publish {
+  def scalaVersion = "2.13.2"
+  def ivyDeps = Agg(
+    ivy"com.lihaoyi::sourcecode:0.2.1"
+  )
+
   object test extends Tests with ScalafmtModule {
     def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.4")
     def testFrameworks = Seq("utest.runner.Framework")
   }
 }
 
+object `ustats-server` extends ScalaModule with ScalafmtModule with Publish {
+  def moduleDeps = Seq(ustats)
+  def scalaVersion = ustats.scalaVersion()
+  def ivyDeps = Agg(
+    ivy"io.undertow:undertow-core:2.1.0.Final"
+  )
+  object test extends Tests with ScalafmtModule {
+    def ivyDeps = Agg(
+      ivy"com.lihaoyi::requests:0.6.5",
+      ivy"com.lihaoyi::utest:0.7.4"
+    )
+
+    def testFrameworks = Seq("utest.runner.Framework")
+  }
+}
+
+
 object benchmark extends ScalaModule with Jmh {
-  def scalaVersion = "2.13.1"
+  def scalaVersion = ustats.scalaVersion
   def moduleDeps = Seq(ustats)
 }
 

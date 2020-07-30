@@ -1,7 +1,7 @@
 # ustats
 
 A simple and intuitive metrics collection library for Scala, to be used with
-Prometheus. 
+Prometheus.
 
 ## Highlights
 
@@ -30,8 +30,10 @@ val myCounter = ustats.counter()
 myCounter += 1
 
 println(ustats.metrics) // = my_counter 1.0
+```
 
-val anotherCounter = ustats.counter("label1" -> "foo", "label2" -> 42)
+```scala
+val myCounter = ustats.counter("label1" -> "foo", "label2" -> 42)
 myCounter += 1
 myCounter += 2
 
@@ -56,10 +58,9 @@ val myCounter = ustats.namedCounter("my_app_http_requests_total")
 println(ustats.metrics) // = my_app_http_requests_total 0.0
 ```
 
-Cask:
+Cask HTTP request timing:
 
 ```scala
-
 object Main extends cask.MainRoutes {
 
   val httpRequests = ustats.histogram("path" -> "/index")
@@ -76,7 +77,25 @@ object Main extends cask.MainRoutes {
   initialize()
 
 }
+```
 
+## Server
+
+ustats includes an optional server module which allows you to export metrics
+over HTTP, under the standard `/metrics` endpoint. The server module is based on
+[undertow](https://github.com/undertow-io/undertow).
+
+- mill: `ivy"io.crashbox::ustats-server:<latest_version>"`
+- sbt: `"io.crashbox" %% "ustats-server" % "<latest_version>"`
+
+```scala
+// global server for global stats
+ustats.server.start("localhost", 10000)
+
+// custom server for custom stats
+val stats = new ustats.Stats
+val server = ustats.MetricsServer(stats)
+server.start("localhost", 10000)
 ```
 
 ## Benchmarks
