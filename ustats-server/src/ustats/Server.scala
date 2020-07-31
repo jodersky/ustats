@@ -14,8 +14,6 @@ import io.undertow.util.Methods
   */
 class MetricsServer private[ustats] (stats: Option[Stats]) {
 
-  System.setProperty("org.jboss.logging.provider", "jdk")
-
   val handler = new HttpHandler {
     override def handleRequest(exchange: HttpServerExchange): Unit = {
       if (exchange.getRequestMethod() != Methods.GET) {
