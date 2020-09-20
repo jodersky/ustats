@@ -4,6 +4,10 @@ import java.io.OutputStream
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.atomic.DoubleAdder
 
+object Stats {
+  def apply(prefix: String = "", BlockSize: Int = 32) = new Stats(prefix, BlockSize)
+}
+
 /** A memory-efficient, concurrent-friendly metrics collection interface.
   *
   * @param prefix A string that is prepended to all automatically generated
@@ -14,7 +18,7 @@ import java.util.concurrent.atomic.DoubleAdder
   *                  changed for regular use, but can be tuned to a larger
   *                  value, should you have many metrics.
   */
-class Stats(prefix: String = "", BlockSize: Int = 32) {
+class Stats(val prefix: String = "", BlockSize: Int = 32) {
 
   // For fast access and a light memory footprint, all data is stored as chunks
   // of contiguous DoubleAdder arrays. DoubleAdders (as opposed to AtomicDoubles)

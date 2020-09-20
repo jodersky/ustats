@@ -5,7 +5,7 @@ import utest._
 object Test extends TestSuite {
 
   def withStats(fct: Stats => Unit) = {
-    fct(new Stats)
+    fct(Stats())
   }
 
   val tests = Tests {

@@ -1,4 +1,4 @@
-# ustats
+# μstats
 
 A simple and intuitive metrics collection library for Scala, to be used with
 Prometheus.
@@ -43,7 +43,7 @@ println(ustats.metrics) // = my_counter{label1="foo", label2="42"} 3.0
 Use your own collector with a prefix:
 
 ```scala
-val collector = new ustats.Stats(previx = "my_app_")
+val collector = ustats.Stats(previx = "my_app_")
 
 val currentUsers = collector.gauge()
 currentUsers += 10
@@ -93,7 +93,7 @@ over HTTP, under the standard `/metrics` endpoint. The server module is based on
 ustats.server.start("localhost", 10000)
 
 // custom server for custom stats
-val stats = new ustats.Stats
+val stats = ustats.Stats()
 val server = ustats.MetricsServer(stats)
 server.start("localhost", 10000)
 ```
