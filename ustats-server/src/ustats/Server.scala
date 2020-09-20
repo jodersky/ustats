@@ -40,7 +40,7 @@ class MetricsServer private[ustats] (stats: Option[Stats]) {
     }
   }
 
-  def start(host: String = "127.0.0.1", port: Int = 10000, silent: Boolean = true) = {
+  def start(host: String = "[::]", port: Int = 10000, silent: Boolean = true) = {
     if (silent) MetricsServer.silenceJboss()
     val server = Undertow.builder
       .addHttpListener(port, host)
