@@ -26,24 +26,24 @@ object ustats extends ScalaModule with ScalafmtModule with Publish {
     def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.4")
     def testFrameworks = Seq("utest.runner.Framework")
   }
-}
 
-object `ustats-server` extends ScalaModule with ScalafmtModule with Publish {
-  def moduleDeps = Seq(ustats)
-  def scalaVersion = ustats.scalaVersion()
-  def ivyDeps = Agg(
-    ivy"io.undertow:undertow-core:2.1.0.Final"
-  )
-  object test extends Tests with ScalafmtModule {
+  object server extends ScalaModule with ScalafmtModule with Publish {
+    def moduleDeps = Seq(ustats)
+    def scalaVersion = ustats.scalaVersion()
     def ivyDeps = Agg(
-      ivy"com.lihaoyi::requests:0.6.5",
-      ivy"com.lihaoyi::utest:0.7.4"
+      ivy"io.undertow:undertow-core:2.1.0.Final"
     )
+    object test extends Tests with ScalafmtModule {
+      def ivyDeps = Agg(
+        ivy"com.lihaoyi::requests:0.6.5",
+        ivy"com.lihaoyi::utest:0.7.4"
+      )
 
-    def testFrameworks = Seq("utest.runner.Framework")
+      def testFrameworks = Seq("utest.runner.Framework")
+    }
   }
-}
 
+}
 
 object benchmark extends ScalaModule with Jmh {
   def scalaVersion = ustats.scalaVersion
@@ -59,7 +59,7 @@ object examples extends Module {
 
   object cask extends Example {
     def ivyDeps = Agg(
-      ivy"com.lihaoyi::cask:0.5.6"
+      ivy"com.lihaoyi::cask:0.6.5"
     )
   }
   object cask2 extends Example {
