@@ -43,7 +43,7 @@ println(ustats.metrics) // = my_counter{label1="foo", label2="42"} 3.0
 Use your own collector with a prefix:
 
 ```scala
-val collector = ustats.Stats(previx = "my_app_")
+val collector = ustats.Stats(prefix = "my_app_")
 
 val currentUsers = collector.gauge()
 currentUsers += 10
@@ -78,6 +78,35 @@ object Main extends cask.MainRoutes {
 
 }
 ```
+
+## Probing
+
+Sometimes it is useful to collect metrics in batch jobs. For example, querying
+the number of entries in a database, or instrumenting some existing code without
+modifying it. ustats has a builtin "probe" mechanism to run batch jobs
+repeatedly at customizable intervals.
+
+```scala
+val counter1 = ustats.counter()
+val gauge1 = ustats.gauge()
+
+// run this action every 10 seconds
+ustats.probe(10){
+  // query database
+  counter1 += 1
+  gauge1.set(42)
+}
+
+// also works with async code
+ustats.probe.async(10) { implicit ec =>
+  val f: Future[_] = // something that returns a Future[_]
+  f.map{ _ =>
+    counter1 += 1
+  }
+}
+```
+
+Note that failures of probes themselves are recorded and exposed as a metric.
 
 ## Server
 
