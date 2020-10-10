@@ -19,6 +19,6 @@ class TestCounter {
   def counter(state: state): Unit = state.counter += 1
 
   @Benchmark
-  def metrics(state: state): Unit = state.collector.metrics
+  def metrics(state: state): Unit = state.collector.metrics()
 
 }

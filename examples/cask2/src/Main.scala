@@ -54,7 +54,7 @@ object Main extends cask.MainRoutes with Timed {
   }
 
   @cask.get("/metrics")
-  def metrics() = ustats.metrics
+  def metrics() = ustats.metrics()
 
   initialize()
 

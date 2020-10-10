@@ -27,7 +27,8 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
   // concurrently.
   private class Block {
     @volatile var next: Block = null
-    val metrics = new Array[String](BlockSize)
+    val comments = new Array[String](BlockSize) // help and type
+    val metrics = new Array[String](BlockSize) // name
     val data = Array.fill[DoubleAdder](BlockSize)(new DoubleAdder)
     @volatile var i = 0 // next index to fill
   }
@@ -45,11 +46,14 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
     * 1) metrics may only ever be added; they can never be removed
     * 2) atomic reads are not important for the purpose of metrics collection
     */
-  def writeMetricsTo(out: OutputStream): Unit = {
+  def writeMetricsTo(out: OutputStream, includeInfo: Boolean = true): Unit = {
     var block = head
     while (block != null) {
       var i = 0
       while (i < block.i) {
+        if (includeInfo) {
+          out.write(block.comments(i).getBytes("utf-8"))
+        }
         out.write(block.metrics(i).getBytes("utf-8"))
         out.write(32) // space
         out.write(block.data(i).sum().toString().getBytes("utf-8"))
@@ -65,11 +69,26 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
     *
     * See also writeMetricsTo() for a note on consistency.
     */
-  def metrics: String = {
+  def metrics(includeInfo: Boolean = true): String = {
     val out = new ByteArrayOutputStream
-    writeMetricsTo(out)
+    writeMetricsTo(out, includeInfo)
     out.close()
     out.toString("utf-8")
+  }
+
+  def helpAndType(
+      name: String,
+      help: String = null,
+      tpe: String = null
+  ): List[String] = {
+    val info = collection.mutable.ListBuffer.empty[String]
+    if (help != null) {
+      info += s"HELP $name $help"
+    }
+    if (tpe != null) {
+      info += s"TYPE $name $tpe"
+    }
+    info.result()
   }
 
   /** Add a metric manually.
@@ -77,15 +96,27 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
     * This is a low-level escape hatch that should be used only when no other
     * functions apply.
     */
-  def addMetric(name: String): DoubleAdder = synchronized {
+  def addMetric(
+      name: String,
+      labels: Seq[(String, Any)],
+      commentLines: Seq[String] = Nil
+  ): DoubleAdder = synchronized {
     if (curr.i >= BlockSize) {
       val b = new Block
       curr.next = b
       curr = b
-      addMetric(name)
+      addMetric(name, labels, commentLines)
     } else {
       val i = curr.i
-      curr.metrics(i) = name
+      val comment = new StringBuilder
+      commentLines.foreach { line =>
+        val escaped = line
+          .replace("""\""", """\\""")
+          .replace("\n", """\n""")
+        comment ++= s"# $line\n"
+      }
+      curr.comments(i) = comment.result()
+      curr.metrics(i) = util.labelify(name, labels)
       curr.i += 1
       curr.data(i)
     }
@@ -97,7 +128,7 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
     * according to the prometheus syntax.
     */
   def namedCounter(name: String, labels: (String, Any)*): Counter = {
-    val adder = addMetric(util.labelify(name, labels))
+    val adder = addMetric(name, labels, helpAndType(name, tpe = "counter"))
     new Counter(adder)
   }
 
@@ -120,7 +151,7 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
   }
 
   def namedGauge(name: String, labels: (String, Any)*): Gauge = {
-    val adder = addMetric(util.labelify(name, labels))
+    val adder = addMetric(name, labels, helpAndType(name, tpe = "gauge"))
     new Gauge(adder)
   }
 
@@ -146,19 +177,32 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
     } else {
       Array.from(buckets0 ++ Seq(Double.PositiveInfinity))
     }
-    val adders = buckets1.map { bucket =>
-      val label = if (bucket.isPosInfinity) {
-        "+Inf"
-      } else {
-        bucket
-      }
-      addMetric(util.labelify(name + "_bucket", labels ++ Seq("le" -> label)))
+
+    val adders = buckets1.zipWithIndex.map {
+      case (bucket, idx) =>
+        val label = if (bucket.isPosInfinity) {
+          "+Inf"
+        } else {
+          bucket
+        }
+
+        if (idx == 0) {
+          // the first element will have type info associated to it
+          addMetric(
+            name + "_bucket",
+            labels ++ Seq("le" -> label),
+            helpAndType(name, tpe = "histogram")
+          )
+        } else {
+          addMetric(name + "_bucket", labels ++ Seq("le" -> label))
+        }
     }
+
     new Histogram(
       buckets1,
       adders,
-      addMetric(util.labelify(name + "_count", labels)),
-      addMetric(util.labelify(name + "_sum", labels))
+      addMetric(name + "_count", labels),
+      addMetric(name + "_sum", labels)
     )
   }
 
@@ -192,6 +236,6 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
     * Note that the actual value will always be 1.
     */
   def info(properties: (String, Any)*): Unit =
-    addMetric(util.labelify("build_info", properties)).add(1)
+    addMetric("build_info", properties).add(1)
 
 }

@@ -27,7 +27,7 @@ object ServerTest extends TestSuite {
       val res = requests.get("http://localhost:10000/metrics")
       res.statusCode ==> 200
       res.contentType ==> Some("text/plain")
-      res.text() ==> "counter 1.0\n"
+      res.text() ==> "# TYPE counter counter\ncounter 1.0\n"
     }
   }
 }

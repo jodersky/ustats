@@ -12,7 +12,7 @@ object Main extends cask.MainRoutes {
   }
 
   @cask.get("/metrics")
-  def metrics() = ustats.metrics
+  def metrics() = ustats.metrics()
 
   initialize()
 
