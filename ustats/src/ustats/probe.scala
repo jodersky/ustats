@@ -66,16 +66,20 @@ trait Probing { this: Stats =>
     def async(
         rateInSeconds: Long,
         pool: juc.ScheduledExecutorService = probePool
-    )(action: => scala.concurrent.Future[_]): juc.ScheduledFuture[_] =
+    )(
+        action: scala.concurrent.ExecutionContext => scala.concurrent.Future[_]
+    ): juc.ScheduledFuture[_] = {
+      val ec = scala.concurrent.ExecutionContext.fromExecutorService(pool)
       apply(rateInSeconds, pool) {
         scala.concurrent.Await.result(
-          action,
+          action(ec),
           scala.concurrent.duration.FiniteDuration(
             rateInSeconds,
             juc.TimeUnit.SECONDS
           )
         )
       }
+    }
   }
 
 }
