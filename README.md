@@ -1,14 +1,12 @@
 # μstats
 
-A simple and intuitive metrics collection library for Scala, to be used with
-Prometheus.
+A simple and intuitive metrics collection library for Prometheus.
 
 ## Highlights
 
 - ease of use: *does what you want it to do without any setup ceremony*
 
-- efficiency: *light memory footprint and extremely fast, optimized for
-  concurrent systems*
+- efficiency: *light memory footprint and extremely fast*
 
 ## Getting Started
 
