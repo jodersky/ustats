@@ -5,7 +5,9 @@ object Main extends App {
   val itemsTotal = ustats.gauge()
 
   ustats.probe(10){
-    itemsTotal.set(database.length)
+    val l = database.length
+    if (l > 5) sys.error("random failure")
+    itemsTotal.set(l)
   }
 
   ustats.server.start("localhost", 8081)
