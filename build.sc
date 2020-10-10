@@ -54,7 +54,7 @@ object examples extends Module {
 
   trait Example extends ScalaModule {
     def scalaVersion = ustats.scalaVersion
-    def moduleDeps = Seq(ustats)
+    def moduleDeps: Seq[ScalaModule] = Seq(ustats)
   }
 
   object cask extends Example {
@@ -64,5 +64,8 @@ object examples extends Module {
   }
   object cask2 extends Example {
     def ivyDeps = cask.ivyDeps
+  }
+  object probe extends Example {
+    def moduleDeps = Seq(ustats, ustats.server)
   }
 }
