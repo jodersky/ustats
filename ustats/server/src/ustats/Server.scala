@@ -45,6 +45,7 @@ class MetricsServer private[ustats] (stats: Option[Stats]) {
     val server = Undertow.builder
       .addHttpListener(port, host)
       .setHandler(new BlockingHandler(handler))
+      .setWorkerOption(org.xnio.Options.THREAD_DAEMON.asInstanceOf[org.xnio.Option[Any]], true)
       .build()
     server.start()
     server
