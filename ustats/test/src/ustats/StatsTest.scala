@@ -80,5 +80,15 @@ object Test extends TestSuite {
         }
       }
     }
+    test("help") {
+      withStats { s =>
+        val myFirstCounter =
+          s.counter(help = "some random counter", "label" -> 1)
+        s.metrics() ==> """|# HELP my_first_counter some random counter
+                           |# TYPE my_first_counter counter
+                           |my_first_counter{label="1"} 0.0
+                           |""".stripMargin
+      }
+    }
   }
 }

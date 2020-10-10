@@ -127,10 +127,17 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
     * The final metrics name will be composed of the passed name plus any labels,
     * according to the prometheus syntax.
     */
-  def namedCounter(name: String, labels: (String, Any)*): Counter = {
-    val adder = addMetric(name, labels, helpAndType(name, tpe = "counter"))
+  def namedCounter(
+      name: String,
+      help: String,
+      labels: (String, Any)*
+  ): Counter = {
+    val adder = addMetric(name, labels, helpAndType(name, help, "counter"))
     new Counter(adder)
   }
+
+  def namedCounter(name: String, labels: (String, Any)*): Counter =
+    namedCounter(name, null, labels: _*)
 
   /** Create and register a counter whose name is automatically derived from the
     * val it is assigned to (plus a global prefix, if set).
@@ -145,22 +152,34 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
     * `my_first_statistic{foo="bar"}`
     */
   def counter(
+      help: String,
       labels: (String, Any)*
-  )(implicit name: sourcecode.Name): Counter = {
-    namedCounter(util.snakify(prefix + name.value), labels: _*)
-  }
+  )(implicit name: sourcecode.Name): Counter =
+    namedCounter(util.snakify(prefix + name.value), help, labels: _*)
 
-  def namedGauge(name: String, labels: (String, Any)*): Gauge = {
-    val adder = addMetric(name, labels, helpAndType(name, tpe = "gauge"))
+  def counter(
+      labels: (String, Any)*
+  )(implicit name: sourcecode.Name): Counter = counter(null, labels: _*)
+
+  def namedGauge(name: String, help: String, labels: (String, Any)*): Gauge = {
+    val adder = addMetric(name, labels, helpAndType(name, help, "gauge"))
     new Gauge(adder)
   }
 
-  def gauge(labels: (String, Any)*)(implicit name: sourcecode.Name): Gauge = {
-    namedGauge(util.snakify(prefix + name.value), labels: _*)
-  }
+  def namedGauge(name: String, labels: (String, Any)*): Gauge =
+    namedGauge(name, null, labels: _*)
+
+  def gauge(help: String, labels: (String, Any)*)(
+      implicit name: sourcecode.Name
+  ): Gauge =
+    namedGauge(util.snakify(prefix + name.value), help, labels: _*)
+
+  def gauge(labels: (String, Any)*)(implicit name: sourcecode.Name): Gauge =
+    gauge(null, labels: _*)
 
   def namedHistogram(
       name: String,
+      help: String,
       buckets: BucketDistribution,
       labels: (String, Any)*
   ): Histogram = {
@@ -191,7 +210,7 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
           addMetric(
             name + "_bucket",
             labels ++ Seq("le" -> label),
-            helpAndType(name, tpe = "histogram")
+            helpAndType(name, help, "histogram")
           )
         } else {
           addMetric(name + "_bucket", labels ++ Seq("le" -> label))
@@ -206,22 +225,31 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
     )
   }
 
+  def namedHistogram(
+      name: String,
+      buckets: BucketDistribution,
+      labels: (String, Any)*
+  ): Histogram = namedHistogram(name, null, buckets, labels: _*)
+
   def namedHistogram(name: String, labels: (String, Any)*): Histogram =
     namedHistogram(name, BucketDistribution.Default, labels: _*)
 
+  def histogram(
+      help: String,
+      buckets: BucketDistribution,
+      labels: (String, Any)*
+  )(implicit name: sourcecode.Name): Histogram =
+    namedHistogram(util.snakify(prefix + name.value), help, buckets, labels: _*)
+
   def histogram(buckets: BucketDistribution, labels: (String, Any)*)(
       implicit name: sourcecode.Name
-  ) = {
-    namedHistogram(util.snakify(prefix + name.value), buckets, labels: _*)
-  }
+  ): Histogram =
+    histogram(null, buckets, labels: _*)
 
-  def histogram(labels: (String, Any)*)(implicit name: sourcecode.Name) = {
-    namedHistogram(
-      util.snakify(prefix + name.value),
-      BucketDistribution.Default,
-      labels: _*
-    )
-  }
+  def histogram(
+      labels: (String, Any)*
+  )(implicit name: sourcecode.Name): Histogram =
+    histogram(BucketDistribution.Default, labels: _*)
 
   /** A pseudo-metric used to expose application information in labels.
     *
