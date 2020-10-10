@@ -2,6 +2,10 @@ import $file.jmh
 import jmh.Jmh
 import mill._, scalalib._, scalafmt._, publish._
 
+val scala213 = "2.13.3"
+val scala3 = "0.27.0-RC1"
+val dottyCustomVersion = Option(sys.props("dottyVersion"))
+
 trait Publish extends PublishModule {
   def publishVersion = "0.2.0"
   def pomSettings = PomSettings(
@@ -16,20 +20,28 @@ trait Publish extends PublishModule {
   )
 }
 
-object ustats extends ScalaModule with ScalafmtModule with Publish {
-  def scalaVersion = "2.13.2"
+class UstatsModule(val crossScalaVersion: String)
+    extends CrossScalaModule
+    with ScalafmtModule
+    with Publish {
+  def artifactName = "ustats"
   def ivyDeps = Agg(
     ivy"com.lihaoyi::sourcecode:0.2.1"
   )
-
   object test extends Tests with ScalafmtModule {
     def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.4")
     def testFrameworks = Seq("utest.runner.Framework")
   }
+}
 
-  object server extends ScalaModule with ScalafmtModule with Publish {
-    def moduleDeps = Seq(ustats)
-    def scalaVersion = ustats.scalaVersion()
+object ustats extends Cross[UstatsModule]((Seq(scala213, scala3) ++ dottyCustomVersion): _*) {
+
+  class UstatsServerModule(val crossScalaVersion: String)
+      extends CrossScalaModule
+      with ScalafmtModule
+      with Publish {
+    def artifactName = "ustats-server"
+    def moduleDeps = Seq(ustats(crossScalaVersion))
     def ivyDeps = Agg(
       ivy"io.undertow:undertow-core:2.1.0.Final"
     )
@@ -42,19 +54,20 @@ object ustats extends ScalaModule with ScalafmtModule with Publish {
       def testFrameworks = Seq("utest.runner.Framework")
     }
   }
+  object server extends Cross[UstatsServerModule]((Seq(scala213, scala3) ++ dottyCustomVersion): _*)
 
 }
 
 object benchmark extends ScalaModule with Jmh {
-  def scalaVersion = ustats.scalaVersion
-  def moduleDeps = Seq(ustats)
+  def scalaVersion = scala213
+  def moduleDeps = Seq(ustats(scala213))
 }
 
 object examples extends Module {
 
   trait Example extends ScalaModule {
-    def scalaVersion = ustats.scalaVersion
-    def moduleDeps: Seq[ScalaModule] = Seq(ustats)
+    def scalaVersion = scala213
+    def moduleDeps: Seq[ScalaModule] = Seq(ustats(scala213))
   }
 
   object cask extends Example {
@@ -66,6 +79,6 @@ object examples extends Module {
     def ivyDeps = cask.ivyDeps
   }
   object probe extends Example {
-    def moduleDeps = Seq(ustats, ustats.server)
+    def moduleDeps = Seq(ustats(scala213), ustats.server(scala213))
   }
 }

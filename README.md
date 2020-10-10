@@ -10,8 +10,8 @@ A simple and intuitive metrics collection library for Prometheus.
 
 ## Getting Started
 
-ustats is available from maven central (for Scala 2.13). Add its coordinates to
-your build config:
+ustats is available from maven central (for Scala 2.13 and Dotty). Add its
+coordinates to your build config:
 
 - mill: `ivy"io.crashbox::ustats:<latest_version>"`
 - sbt: `"io.crashbox" %% "ustats" % "<latest_version>"`
