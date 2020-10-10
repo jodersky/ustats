@@ -3,7 +3,7 @@ import jmh.Jmh
 import mill._, scalalib._, scalafmt._, publish._
 
 trait Publish extends PublishModule {
-  def publishVersion = "0.1.1"
+  def publishVersion = "0.2.0"
   def pomSettings = PomSettings(
     description = "Simple metrics collection",
     organization = "io.crashbox",
