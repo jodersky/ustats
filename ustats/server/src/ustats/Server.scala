@@ -40,12 +40,19 @@ class MetricsServer private[ustats] (stats: Option[Stats]) {
     }
   }
 
-  def start(host: String = "[::]", port: Int = 10000, silent: Boolean = true) = {
+  def start(
+      host: String = "[::]",
+      port: Int = 10000,
+      silent: Boolean = true
+  ) = {
     if (silent) MetricsServer.silenceJboss()
     val server = Undertow.builder
       .addHttpListener(port, host)
       .setHandler(new BlockingHandler(handler))
-      .setWorkerOption(org.xnio.Options.THREAD_DAEMON.asInstanceOf[org.xnio.Option[Any]], true)
+      .setWorkerOption(
+        org.xnio.Options.THREAD_DAEMON.asInstanceOf[org.xnio.Option[Any]],
+        true
+      )
       .build()
     server.start()
     server
@@ -61,7 +68,8 @@ object MetricsServer {
     // rather rude behaviour.
     val tmp = System.out
     System.setOut(null)
-    org.jboss.threads.Version.getVersionString() // this causes the static initializer to be run
+    org.jboss.threads.Version
+      .getVersionString() // this causes the static initializer to be run
     System.setOut(tmp)
 
     // Other loggers print way too much information. Set them to only print
