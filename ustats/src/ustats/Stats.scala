@@ -5,7 +5,8 @@ import java.io.ByteArrayOutputStream
 import java.util.concurrent.atomic.DoubleAdder
 
 object Stats {
-  def apply(prefix: String = "", BlockSize: Int = 32) = new Stats(prefix, BlockSize)
+  def apply(prefix: String = "", BlockSize: Int = 32) =
+    new Stats(prefix, BlockSize)
 }
 
 /** A memory-efficient, concurrent-friendly metrics collection interface.
