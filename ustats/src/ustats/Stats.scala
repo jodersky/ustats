@@ -234,6 +234,13 @@ class Stats(val prefix: String = "", BlockSize: Int = 32) {
   def namedHistogram(name: String, labels: (String, Any)*): Histogram =
     namedHistogram(name, BucketDistribution.Default, labels: _*)
 
+  def namedHistogram(
+      name: String,
+      help: String,
+      labels: (String, Any)*
+  ): Histogram =
+    namedHistogram(name, help, BucketDistribution.Default, labels: _*)
+
   def histogram(
       help: String,
       buckets: BucketDistribution,
