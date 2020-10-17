@@ -24,57 +24,53 @@ where `<latest_version>` is
 Basic example, create a counter using the default collector:
 
 ```scala
-val myCounter = ustats.counter()
+val myCounter = ustats.counter("my_counter", "This is just a simple counter.")
 myCounter += 1
 
-println(ustats.metrics) // = my_counter 1.0
+println(ustats.metrics())
+
+// # HELP my_counter This is just a simple counter.
+// # TYPE my_counter counter
+// my_counter 1.0
 ```
 
-```scala
-val myCounter = ustats.counter("label1" -> "foo", "label2" -> 42)
-myCounter += 1
-myCounter += 2
+You can also add label-value pairs to individual metrics:
 
-println(ustats.metrics) // = my_counter{label1="foo", label2="42"} 3.0
+```scala
+val myGauge = ustats.gauge("my_gauge", labels = Seq("label1" -> "foo", "label2" -> 42))
+myGauge += 1
+myGauge += 2
+
+println(ustats.metrics())
+// # TYPE my_counter gauge
+// my_gauge{label1="foo", label2="42"} 3.0
 ```
 
-Use your own collector with a prefix:
+However, you'd usually want to declare one metric sharing a common basename, and
+add labels on demand:
 
 ```scala
-val collector = ustats.Stats(prefix = "my_app_")
+val queueSizes = ustats.gauges("queue_size", labels = Seq("queue_name"))
 
-val currentUsers = collector.gauge()
+queueSizes.labelled("queue1") += 10
+queueSizes.labelled("queue1") -= 1
+queueSizes.labelled("queue2") += 2
+
+println(ustats.metrics())
+// # TYPE queue_size gauge
+// queue_size{queue_name="queue1"} 9.0
+// queue_size{queue_name="queue2"} 2.0
+```
+
+Use your own collector:
+
+```scala
+val collector = new ustats.Stats()
+
+val currentUsers = collector.gauge("my_app_current_users")
 currentUsers += 10
 currentUsers -= 1
-println(collector.metrics) // = my_app_current_users 9.0
-```
-
-Override the name of a metric:
-
-```scala
-val myCounter = ustats.namedCounter("my_app_http_requests_total")
-println(ustats.metrics) // = my_app_http_requests_total 0.0
-```
-
-Cask HTTP request timing:
-
-```scala
-object Main extends cask.MainRoutes {
-
-  val httpRequests = ustats.histogram("path" -> "/index")
-
-  @cask.get("/index")
-  def index() = httpRequests.time {
-    // do something
-    cask.Response("here you are", 200)
-  }
-
-  @cask.get("/metrics")
-  def metrics() = ustats.metrics
-
-  initialize()
-
-}
+println(collector.metrics())
 ```
 
 ## Probing
@@ -85,8 +81,8 @@ modifying it. ustats has a builtin "probe" mechanism to run batch jobs
 repeatedly at customizable intervals.
 
 ```scala
-val counter1 = ustats.counter()
-val gauge1 = ustats.gauge()
+val counter1 = ustats.counter("counter1")
+val gauge1 = ustats.gauge("gauge1")
 
 // run this action every 10 seconds
 ustats.probe(10){
@@ -120,8 +116,8 @@ over HTTP, under the standard `/metrics` endpoint. The server module is based on
 ustats.server.start("localhost", 10000)
 
 // custom server for custom stats
-val stats = ustats.Stats()
-val server = ustats.MetricsServer(stats)
+val stats = new ustats.Stats()
+val server = new ustats.MetricsServer(stats)
 server.start("localhost", 10000)
 ```
 
@@ -137,21 +133,16 @@ Here are some benchmarks obtained on a laptop with an Intel Core i7-8550U CPU,
 
 ```
 # Single threaded, ideal conditions
-mill benchmark.runJmh -wi 20 -i 20 -f 1 -t 1
+mill benchmark.runJmh -wi 10 -i 10 -f 1 -t 1
 
 Benchmark            Mode  Cnt    Score   Error  Units
-TestCounter.counter  avgt   20    9.905 ± 0.062  ns/op
-TestCounter.metrics  avgt   20  113.145 ± 2.054  ns/op
+TestCounter.counter  avgt   10    9.742 ± 0.074  ns/op
+TestCounter.metrics  avgt   10  160.115 ± 9.994  ns/op
 
-# This simulates heavy parallel access with 64 concurrent threads
-mill benchmark.runJmh -wi 20 -i 20 -f 1 -t 64
+# This simulates heavy parallel access with 8 concurrent threads
+mill benchmark.runJmh -wi 10 -i 10 -f 1 -t 8
 
-Benchmark            Mode  Cnt     Score     Error  Units
-TestCounter.counter  avgt   20   156.438 ±   3.749  ns/op
-TestCounter.metrics  avgt   20  3860.640 ± 138.861  ns/op
+Benchmark            Mode  Cnt    Score    Error  Units
+TestCounter.counter  avgt   10   17.691 ±  1.050  ns/op
+TestCounter.metrics  avgt   10  601.332 ± 12.522  ns/op
 ```
-
-As shown, millions of updates per second are possible on consumer-grade
-hardware, even with heavy concurrent access. Also, tens of thousands of metric
-exports per second are possible (although metrics are typically read much less
-frequently, usually once every few seconds).

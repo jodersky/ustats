@@ -3,26 +3,22 @@ import io.undertow.server.handlers.BlockingHandler
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
 
-// Extends this trait to time all routes.
+// Extend this trait to time all routes.
 trait Timed extends cask.Main {
 
   lazy val histograms = {
-    // exhaustive list of paths
-    val paths = for {
+    val hs = ustats.histograms("http_requests_seconds", labels = Seq("method", "path"))
+
+    // prepopulate histogram with all known routes
+    for {
       routes <- allRoutes
       route <- routes.caskMetadata.value.map(x =>
         x: cask.router.EndpointMetadata[_]
       )
-    } yield (route.endpoint.path)
+      m <- route.endpoint.methods
+    } hs.labelled(m, route.endpoint.path)
 
-    val cmap = new ConcurrentHashMap[String, ustats.Histogram]
-    for (path <- paths) {
-      cmap.put(
-        path,
-        ustats.namedHistogram("http_requests_seconds", "path" -> path)
-      )
-    }
-    cmap
+    hs
   }
 
   override def defaultHandler: BlockingHandler = {
@@ -30,13 +26,15 @@ trait Timed extends cask.Main {
 
     val timedHandler = new HttpHandler {
       def handleRequest(exchange: HttpServerExchange): Unit = {
-        val histogram = histograms.get(exchange.getRequestPath())
-        if (histogram != null) {
-          histogram.time(
-            parent.handleRequest(exchange)
-          )
-        } else {
-          parent.handleRequest(exchange)
+        val effectiveMethod = exchange.getRequestMethod.toString.toLowerCase()
+        val endpoint = routeTries(effectiveMethod).lookup(cask.internal.Util.splitPath(exchange.getRequestPath).toList, Map())
+
+        endpoint match {
+          case None => parent.handleRequest(exchange)
+          case Some(((_,metadata), _, _)) =>
+            histograms.labelled(effectiveMethod, metadata.endpoint.path).time(
+              parent.handleRequest(exchange)
+            )
         }
       }
     }
@@ -51,6 +49,16 @@ object Main extends cask.MainRoutes with Timed {
   @cask.get("/")
   def index() = {
     cask.Response("here you are!", 200)
+  }
+
+  @cask.get("/foo/:id/bar")
+  def getFoo(id: String) = {
+    cask.Response(s"foo is $id", 200)
+  }
+
+  @cask.post("/foo/:id/bar")
+  def setFoo(id: String) = {
+    cask.Response(s"foo is $id", 200)
   }
 
   @cask.get("/metrics")

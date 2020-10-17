@@ -12,7 +12,7 @@ class Histogram(
 ) {
 
   /** Record a single data point. */
-  def add(value: Double): Unit = {
+  def observe(value: Double): Unit = {
     var i = 0
     while (i < buckets.length) {
       if (value <= buckets(i)) {
@@ -29,7 +29,7 @@ class Histogram(
     val now = System.nanoTime()
     val result = fct
     val elapsedSeconds = (System.nanoTime - now) / 1e9
-    add(elapsedSeconds)
+    observe(elapsedSeconds)
     result
   }
 
@@ -39,7 +39,7 @@ class Histogram(
   )(implicit ec: ExecutionContext): Future[A] = {
     val now = System.nanoTime()
     val result = fct
-    result.onComplete(_ => add((System.nanoTime - now) / 1e9))
+    result.onComplete(_ => observe((System.nanoTime - now) / 1e9))
     result
   }
 

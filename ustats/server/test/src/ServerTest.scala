@@ -22,7 +22,7 @@ object ServerTest extends TestSuite {
       res.text() ==> ""
     }
     test("metrics") {
-      val counter = stats.namedCounter("counter")
+      val counter = stats.counter("counter")
       counter += 1
       val res = requests.get("http://localhost:10000/metrics")
       res.statusCode ==> 200

@@ -1,7 +1,7 @@
 object Main extends cask.MainRoutes {
 
-  val httpRequestsSeconds = ustats.histogram("path" -> "/index")
-  val randomFailures = ustats.counter()
+  val httpRequestsSeconds = ustats.histogram("http_requests_seconds", labels = Seq("path" -> "/index"))
+  val randomFailures = ustats.counter("random_failures")
 
   @cask.get("/")
   def index() = httpRequestsSeconds.time {

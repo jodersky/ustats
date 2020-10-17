@@ -2,7 +2,7 @@ object Main extends App {
 
   var database = collection.mutable.ListBuffer.empty[String]
 
-  val itemsTotal = ustats.gauge()
+  val itemsTotal = ustats.gauge("items_total")
 
   ustats.probe(10){
     val l = database.length

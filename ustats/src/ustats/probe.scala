@@ -5,18 +5,20 @@ import java.util.{concurrent => juc}
 class ProbeFailedException(cause: Exception) extends Exception(cause)
 
 object Probing {
-  def makeThreadPool(n: Int) =
+  def makeThreadPool(n: Int) = {
+    val counter = new juc.atomic.AtomicInteger(0)
     juc.Executors.newScheduledThreadPool(
       n,
       new juc.ThreadFactory {
         override def newThread(r: Runnable) = {
           val t = new Thread(r)
           t.setDaemon(true)
-          t.setName("ustats-probe")
+          t.setName(s"ustats-probe-${counter.incrementAndGet()}")
           t
         }
       }
     )
+  }
 }
 
 trait Probing { this: Stats =>
@@ -27,7 +29,7 @@ trait Probing { this: Stats =>
 
   // override this if you want to deactivate probe failure reporting
   lazy val probeFailureCounter: Option[Counter] = Some(
-    namedCounter("ustats_probe_failures_count")
+    counter("ustats_probe_failures_count")
   )
 
   object probe {

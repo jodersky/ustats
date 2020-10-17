@@ -25,9 +25,6 @@ class UstatsModule(val crossScalaVersion: String)
     with ScalafmtModule
     with Publish {
   def artifactName = "ustats"
-  def ivyDeps = Agg(
-    ivy"com.lihaoyi::sourcecode:0.2.1"
-  )
   object test extends Tests with ScalafmtModule {
     def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.4")
     def testFrameworks = Seq("utest.runner.Framework")
@@ -72,7 +69,7 @@ object examples extends Module {
 
   object cask extends Example {
     def ivyDeps = Agg(
-      ivy"com.lihaoyi::cask:0.6.5"
+      ivy"com.lihaoyi::cask:0.7.7"
     )
   }
   object cask2 extends Example {

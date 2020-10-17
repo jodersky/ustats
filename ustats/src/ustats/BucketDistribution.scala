@@ -23,7 +23,7 @@ object BucketDistribution {
       for (i <- 0 until count) {
         buckets(i) = start + i * width
       }
-      buckets
+      buckets.toSeq
     }
   }
   case class Exponential(start: Double, factor: Double, count: Int)
@@ -31,9 +31,9 @@ object BucketDistribution {
     val buckets: Seq[Double] = {
       val buckets = new Array[Double](count)
       for (i <- 0 until count) {
-        buckets(i) = start + math.pow(factor, i)
+        buckets(i) = start + math.pow(factor, i.toDouble)
       }
-      buckets
+      buckets.toSeq
     }
   }
 

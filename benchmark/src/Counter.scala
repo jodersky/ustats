@@ -8,7 +8,7 @@ import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Mode, OutputTimeUn
 class state {
   val collector = new Stats()
 
-  val counter = collector.counter()
+  val counter = collector.counter("counter")
 }
 
 @OutputTimeUnit(TimeUnit.NANOSECONDS)

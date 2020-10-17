@@ -62,7 +62,7 @@ class MetricsServer private[ustats] (stats: Option[Stats]) {
 object MetricsServer {
   def apply(stats: Stats) = new MetricsServer(Some(stats))
 
-  private def silenceJboss(): Unit = {
+  private def silenceJboss(): Unit = synchronized {
     // Some jboss classes don't have manners and think that it's ok to write to
     // logs from their static initializers. This is a hack to silence this
     // rather rude behaviour.
