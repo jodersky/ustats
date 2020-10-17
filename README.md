@@ -85,14 +85,14 @@ val counter1 = ustats.counter("counter1")
 val gauge1 = ustats.gauge("gauge1")
 
 // run this action every 10 seconds
-ustats.probe(10){
+ustats.probe("query_database", 10){
   // query database
   counter1 += 1
   gauge1.set(42)
 }
 
 // also works with async code
-ustats.probe.async(10) { implicit ec =>
+ustats.probe.async("query_database", 10) { implicit ec =>
   val f: Future[_] = // something that returns a Future[_]
   f.map{ _ =>
     counter1 += 1

@@ -28,8 +28,8 @@ trait Probing { this: Stats =>
   )
 
   // override this if you want to deactivate probe failure reporting
-  lazy val probeFailureCounter: Option[Counter] = Some(
-    counter("ustats_probe_failures_count")
+  lazy val probeFailureCounter: Option[Metrics[Counter]] = Some(
+    ustats.counters("ustats_probe_failures_count", labels = Seq("probe"))
   )
 
   object probe {
@@ -43,19 +43,17 @@ trait Probing { this: Stats =>
       * All actions are run in a dedicated thread pool.
       */
     def apply(
+        name: String,
         rateInSeconds: Long,
         pool: juc.ScheduledExecutorService = probePool
     )(action: => Any): juc.ScheduledFuture[_] = {
-      // initialize the lazy val, so that the metric is exposed even if there
-      // are no failures
-      probeFailureCounter
       pool.scheduleAtFixedRate(
         () =>
           try {
             action
           } catch {
             case ex: Exception =>
-              probeFailureCounter.foreach(_ += 1)
+              probeFailureCounter.foreach { counter => counter(name).inc() }
               (new ProbeFailedException(ex)).printStackTrace()
           },
         0L,
@@ -66,13 +64,14 @@ trait Probing { this: Stats =>
 
     /** Async wrapper for apply(). */
     def async(
+        name: String,
         rateInSeconds: Long,
         pool: juc.ScheduledExecutorService = probePool
     )(
         action: scala.concurrent.ExecutionContext => scala.concurrent.Future[_]
     ): juc.ScheduledFuture[_] = {
       val ec = scala.concurrent.ExecutionContext.fromExecutorService(pool)
-      apply(rateInSeconds, pool) {
+      apply(name, rateInSeconds, pool) {
         scala.concurrent.Await.result(
           action(ec),
           scala.concurrent.duration.FiniteDuration(

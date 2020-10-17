@@ -4,7 +4,7 @@ object Main extends App {
 
   val itemsTotal = ustats.gauge("items_total")
 
-  ustats.probe(10){
+  ustats.probe("query_database", 10){
     val l = database.length
     if (l > 5) sys.error("random failure")
     itemsTotal.set(l)
