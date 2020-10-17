@@ -7,7 +7,7 @@ val scala3 = "0.27.0-RC1"
 val dottyCustomVersion = Option(sys.props("dottyVersion"))
 
 trait Publish extends PublishModule {
-  def publishVersion = "0.3.1"
+  def publishVersion = "0.4.0"
   def pomSettings = PomSettings(
     description = "Simple metrics collection",
     organization = "io.crashbox",
