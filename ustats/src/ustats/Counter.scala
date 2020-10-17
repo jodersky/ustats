@@ -11,4 +11,11 @@ class Counter(private val adder: DoubleAdder) extends AnyVal {
     )
     adder.add(n)
   }
+  def +=(n: Float): Unit = this.+=(n.toDouble)
+  def +=(n: Long): Unit = this.+=(n.toDouble)
+  def +=(n: Int): Unit = this.+=(n.toDouble)
+  def +=(n: Short): Unit = this.+=(n.toDouble)
+  def +=(n: Byte): Unit = this.+=(n.toDouble)
+
+  def inc() = adder.add(1.0)
 }
