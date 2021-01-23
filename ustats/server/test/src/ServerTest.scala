@@ -1,33 +1,58 @@
 import utest._
 
 object ServerTest extends TestSuite {
+
+  case class Response(statusCode: Int, body: String)
+
+  def get(url: String): Response = {
+    val url1 = new java.net.URL(url)
+    val conn = url1.openConnection().asInstanceOf[java.net.HttpURLConnection]
+    try {
+      conn.setRequestMethod("GET")
+      val code = conn.getResponseCode()
+
+      if (200 <= code && code < 300) {
+        val data = new java.io.ByteArrayOutputStream()
+        val stream = conn.getInputStream()
+
+        try {
+          val tmp = new Array[Byte](8192)
+
+          var c = 0
+          while ({c = stream.read(tmp); c > 0}) {
+            data.write(tmp, 0, c)
+          }
+        } finally stream.close()
+
+        val message = new String(data.toByteArray(), "utf-8")
+        Response(code, message)
+      } else {
+        Response(code, "")
+      }
+    } finally conn.disconnect()
+
+  }
+
+
   val stats = new ustats.Stats
   val server = ustats.MetricsServer(stats)
   val http = server.start("localhost", 10000)
   val tests = Tests {
-    test("invalid method") {
-      requests
-        .post("http://localhost:10000/metrics", check = false)
-        .statusCode ==> 405
-    }
     test("invalid path") {
-      requests
-        .get("http://localhost:10000/metricz", check = false)
+      get("http://localhost:10000/metricz")
         .statusCode ==> 404
     }
     test("empty metrics") {
-      val res = requests.get("http://localhost:10000/metrics")
+      val res = get("http://localhost:10000/metrics")
       res.statusCode ==> 200
-      res.contentType ==> Some("text/plain")
-      res.text() ==> ""
+      res.body ==> ""
     }
     test("metrics") {
       val counter = stats.counter("counter")
       counter += 1
-      val res = requests.get("http://localhost:10000/metrics")
+      val res = get("http://localhost:10000/metrics")
       res.statusCode ==> 200
-      res.contentType ==> Some("text/plain")
-      res.text() ==> "# TYPE counter counter\ncounter 1.0\n"
+      res.body ==> "# TYPE counter counter\ncounter 1.0\n"
     }
   }
 }

@@ -2,12 +2,12 @@ import $file.jmh
 import jmh.Jmh
 import mill._, scalalib._, scalafmt._, publish._
 
-val scala213 = "2.13.3"
-val scala3 = "0.27.0-RC1"
+val scala213 = "2.13.4"
+val scala3 = "3.0.0-M3"
 val dottyCustomVersion = Option(sys.props("dottyVersion"))
 
 trait Publish extends PublishModule {
-  def publishVersion = "0.4.0"
+  def publishVersion = "0.4.1"
   def pomSettings = PomSettings(
     description = "Simple metrics collection",
     organization = "io.crashbox",
@@ -20,15 +20,17 @@ trait Publish extends PublishModule {
   )
 }
 
+trait Utest extends ScalaModule with TestModule {
+  def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.7")
+  def testFrameworks = Seq("utest.runner.Framework")
+}
+
 class UstatsModule(val crossScalaVersion: String)
     extends CrossScalaModule
     with ScalafmtModule
     with Publish {
   def artifactName = "ustats"
-  object test extends Tests with ScalafmtModule {
-    def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.4")
-    def testFrameworks = Seq("utest.runner.Framework")
-  }
+  object test extends Tests with Utest
 }
 
 object ustats extends Cross[UstatsModule]((Seq(scala213, scala3) ++ dottyCustomVersion): _*) {
@@ -40,16 +42,9 @@ object ustats extends Cross[UstatsModule]((Seq(scala213, scala3) ++ dottyCustomV
     def artifactName = "ustats-server"
     def moduleDeps = Seq(ustats(crossScalaVersion))
     def ivyDeps = Agg(
-      ivy"io.undertow:undertow-core:2.1.0.Final"
+      ivy"io.undertow:undertow-core:2.2.3.Final"
     )
-    object test extends Tests with ScalafmtModule {
-      def ivyDeps = Agg(
-        ivy"com.lihaoyi::requests:0.6.5",
-        ivy"com.lihaoyi::utest:0.7.4"
-      )
-
-      def testFrameworks = Seq("utest.runner.Framework")
-    }
+    object test extends Tests with Utest
   }
   object server extends Cross[UstatsServerModule]((Seq(scala213, scala3) ++ dottyCustomVersion): _*)
 
