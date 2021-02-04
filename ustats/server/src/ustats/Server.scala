@@ -43,9 +43,9 @@ class MetricsServer private[ustats] (stats: Option[Stats]) {
   def start(
       host: String = "[::]",
       port: Int = 10000,
-      silent: Boolean = true
+      verbose: Boolean = false
   ) = {
-    if (silent) MetricsServer.silenceJboss()
+    if (!verbose) MetricsServer.silenceJboss()
     val server = Undertow.builder
       .addHttpListener(port, host)
       .setHandler(new BlockingHandler(handler))
@@ -62,15 +62,13 @@ class MetricsServer private[ustats] (stats: Option[Stats]) {
 object MetricsServer {
   def apply(stats: Stats) = new MetricsServer(Some(stats))
 
-  private def silenceJboss(): Unit = synchronized {
-    // Some jboss classes don't have manners and think that it's ok to write to
-    // logs from their static initializers. This is a hack to silence this
-    // rather rude behaviour.
-    val tmp = System.out
-    System.setOut(null)
-    org.jboss.threads.Version
-      .getVersionString() // this causes the static initializer to be run
-    System.setOut(tmp)
+  private def silenceJboss(): Unit = {
+    // Some jboss classes litter logs from their static initializers. This is a
+    // workaround to stop this rather annoying behavior.
+    val tmp = System.err
+    System.setErr(null)
+    org.jboss.threads.Version.getVersionString() // this causes the static initializer to be run
+    System.setErr(tmp)
 
     // Other loggers print way too much information. Set them to only print
     // interesting stuff.
@@ -79,4 +77,5 @@ object MetricsServer {
     java.util.logging.Logger.getLogger("org.xnio").setLevel(level)
     java.util.logging.Logger.getLogger("io.undertow").setLevel(level)
   }
+
 }
