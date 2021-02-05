@@ -3,4 +3,6 @@
 ./mill -i mill.scalalib.PublishModule/publishAll \
     --sonatypeCreds "jodersky:$(pass infra/oss.sonatype.org)" \
     --release true \
+    --readTimeout 600000 \
+    --awaitTimeout 600000 \
     --publishArtifacts __.publishArtifacts
