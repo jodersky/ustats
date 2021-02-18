@@ -3,7 +3,7 @@ import jmh.Jmh
 import mill._, scalalib._, scalafmt._, publish._
 
 val scala213 = "2.13.4"
-val scala3 = "3.0.0-M3"
+val scala3 = "3.0.0-RC1"
 val dottyCustomVersion = Option(sys.props("dottyVersion"))
 
 trait Publish extends PublishModule {
@@ -31,6 +31,16 @@ class UstatsModule(val crossScalaVersion: String)
     with Publish {
   def artifactName = "ustats"
   object test extends Tests with Utest
+  // FIXME: scaladoc 3 is not supported by mill yet. Remove the override
+  // once it is.
+  override def docJar =
+    if (crossScalaVersion.startsWith("2")) super.docJar
+    else T {
+      val outDir = T.ctx().dest
+      val javadocDir = outDir / 'javadoc
+      os.makeDir.all(javadocDir)
+      mill.api.Result.Success(mill.modules.Jvm.createJar(Agg(javadocDir))(outDir))
+    }
 }
 
 object ustats extends Cross[UstatsModule]((Seq(scala213, scala3) ++ dottyCustomVersion): _*) {
@@ -45,6 +55,16 @@ object ustats extends Cross[UstatsModule]((Seq(scala213, scala3) ++ dottyCustomV
       ivy"io.undertow:undertow-core:2.2.3.Final"
     )
     object test extends Tests with Utest
+    // FIXME: scaladoc 3 is not supported by mill yet. Remove the override
+    // once it is.
+    override def docJar =
+      if (crossScalaVersion.startsWith("2")) super.docJar
+      else T {
+        val outDir = T.ctx().dest
+        val javadocDir = outDir / 'javadoc
+        os.makeDir.all(javadocDir)
+        mill.api.Result.Success(mill.modules.Jvm.createJar(Agg(javadocDir))(outDir))
+      }
   }
   object server extends Cross[UstatsServerModule]((Seq(scala213, scala3) ++ dottyCustomVersion): _*)
 
