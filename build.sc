@@ -2,8 +2,8 @@ import $file.jmh
 import jmh.Jmh
 import mill._, scalalib._, scalafmt._, publish._
 
-val scala213 = "2.13.4"
-val scala3 = "3.0.0-RC1"
+val scala213 = "2.13.5"
+val scala3 = "3.0.0-RC2"
 val dottyCustomVersion = Option(sys.props("dottyVersion"))
 
 trait Publish extends PublishModule {
@@ -21,7 +21,7 @@ trait Publish extends PublishModule {
 }
 
 trait Utest extends ScalaModule with TestModule {
-  def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.7")
+  def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.8")
   def testFrameworks = Seq("utest.runner.Framework")
 }
 
@@ -84,7 +84,7 @@ object examples extends Module {
 
   object cask extends Example {
     def ivyDeps = Agg(
-      ivy"com.lihaoyi::cask:0.7.7"
+      ivy"com.lihaoyi::cask:0.7.9"
     )
   }
   object cask2 extends Example {
