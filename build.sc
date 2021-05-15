@@ -3,11 +3,11 @@ import jmh.Jmh
 import mill._, scalalib._, scalafmt._, publish._
 
 val scala213 = "2.13.5"
-val scala3 = "3.0.0-RC3"
+val scala3 = "3.0.0"
 val dottyCustomVersion = Option(sys.props("dottyVersion"))
 
 trait Publish extends PublishModule {
-  def publishVersion = "0.4.4"
+  def publishVersion = "0.4.5"
   def pomSettings = PomSettings(
     description = "Simple metrics collection",
     organization = "io.crashbox",
@@ -21,8 +21,8 @@ trait Publish extends PublishModule {
 }
 
 trait Utest extends ScalaModule with TestModule {
-  def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.9")
-  def testFrameworks = Seq("utest.runner.Framework")
+  def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.10")
+  def testFramework = "utest.runner.Framework"
 }
 
 class UstatsModule(val crossScalaVersion: String)
