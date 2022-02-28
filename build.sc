@@ -2,12 +2,12 @@ import $file.jmh
 import jmh.Jmh
 import mill._, scalalib._, scalafmt._, publish._
 
-val scala213 = "2.13.5"
-val scala3 = "3.0.0"
+val scala213 = "2.13.7"
+val scala3 = "3.0.2"
 val dottyCustomVersion = Option(sys.props("dottyVersion"))
 
 trait Publish extends PublishModule {
-  def publishVersion = "0.4.5"
+  def publishVersion = "0.5.0"
   def pomSettings = PomSettings(
     description = "Simple metrics collection",
     organization = "io.crashbox",
