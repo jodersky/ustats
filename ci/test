@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./mill -i __.compile
+./mill -i __.test
