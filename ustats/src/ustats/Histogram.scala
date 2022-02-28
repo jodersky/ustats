@@ -27,10 +27,12 @@ class Histogram(
   /** Record the time in seconds it takes to run the given function. */
   def time[A](fct: => A): A = {
     val now = System.nanoTime()
-    val result = fct
-    val elapsedSeconds = (System.nanoTime - now) / 1e9
-    observe(elapsedSeconds)
-    result
+    try {
+      fct
+    } finally {
+      val elapsedSeconds = (System.nanoTime - now) / 1e9
+      observe(elapsedSeconds)
+    }
   }
 
   /** Record the time in seconds it takes to complete the given future. */

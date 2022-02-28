@@ -137,12 +137,12 @@ class Stats(BlockSize: Int = 128) {
   ): Gauge =
     new Gauge(addRawMetric(name, labels))
 
-  private def addRawHistogram(
+  protected def addRawHistogram(
       name: String,
-      buckets: BucketDistribution = BucketDistribution.Default,
+      buckets: Seq[Double] = BucketDistribution.httpRequestDuration,
       labels: Seq[(String, Any)] = Nil
   ): Histogram = {
-    val buckets0: Seq[Double] = buckets.buckets.sorted
+    val buckets0: Seq[Double] = buckets.sorted
     require(
       labels.forall(_._1 != "le"),
       "histograms may not contain the label \"le\""
@@ -199,7 +199,7 @@ class Stats(BlockSize: Int = 128) {
   def histogram(
       name: String,
       help: String = null,
-      buckets: BucketDistribution = BucketDistribution.Default,
+      buckets: Seq[Double] = BucketDistribution.httpRequestDuration,
       labels: Seq[(String, Any)] = Nil
   ): Histogram = {
     addInfo(name, help, "histogram")
@@ -236,7 +236,7 @@ class Stats(BlockSize: Int = 128) {
   def histograms(
       name: String,
       help: String = null,
-      buckets: BucketDistribution = BucketDistribution.Default,
+      buckets: Seq[Double] = BucketDistribution.httpRequestDuration,
       labels: Seq[String] = Nil
   ): Metrics[Histogram] = {
     addInfo(name, help, "histogram")

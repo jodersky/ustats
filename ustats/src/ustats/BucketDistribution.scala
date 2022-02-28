@@ -1,45 +1,26 @@
 package ustats
 
-trait BucketDistribution {
-  def buckets: Seq[Double]
-}
 object BucketDistribution {
 
-  /** The default distribution used by histogram() overloads that do not take a
-    * distribution as argument.
-    *
-    * This distribution is well-suited for typical web requests, it ranges from
+  /** This distribution is well-suited for typical web requests, it ranges from
     * milliseconds to seconds.
     */
-  object Default extends BucketDistribution {
-    val buckets =
-      Seq(.005, .01, .025, .05, .075, .1, .25, .5, .75, 1, 2.5, 5, 7.5, 10)
+  val httpRequestDuration = Seq(.005, .01, .025, .05, .1, .25, .5, 1, 3, 10)
+
+  def linear(start: Double, width: Double, count: Int) = {
+    val buckets = new Array[Double](count)
+    for (i <- 0 until count) {
+      buckets(i) = start + i * width
+    }
+    buckets.toSeq
   }
 
-  case class Linear(start: Double, width: Double, count: Int)
-      extends BucketDistribution {
-    val buckets: Seq[Double] = {
-      val buckets = new Array[Double](count)
-      for (i <- 0 until count) {
-        buckets(i) = start + i * width
-      }
-      buckets.toSeq
+  def exponential(start: Double, factor: Double, count: Int) = {
+    val buckets = new Array[Double](count)
+    for (i <- 0 until count) {
+      buckets(i) = start + math.pow(factor, i.toDouble)
     }
-  }
-  case class Exponential(start: Double, factor: Double, count: Int)
-      extends BucketDistribution {
-    val buckets: Seq[Double] = {
-      val buckets = new Array[Double](count)
-      for (i <- 0 until count) {
-        buckets(i) = start + math.pow(factor, i.toDouble)
-      }
-      buckets.toSeq
-    }
-  }
-
-  implicit class Enumerated[N](bs: Seq[N])(implicit numeric: Numeric[N])
-      extends BucketDistribution {
-    def buckets = bs.map(b => numeric.toDouble(b))
+    buckets.toSeq
   }
 
 }
