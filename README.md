@@ -1,5 +1,9 @@
 # μstats
 
+[![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://crashbox.zulipchat.com/#narrow/stream/343726-ustats)
+[![ustats Scala version support](https://index.scala-lang.org/jodersky/ustats/ustats/latest.svg)](https://index.scala-lang.org/jodersky/ustats/ustats)
+[![stability: soft](https://img.shields.io/badge/stability-soft-white)](https://www.crashbox.io/stability.html)
+
 A simple and intuitive metrics collection library for Prometheus.
 
 ## Highlights
