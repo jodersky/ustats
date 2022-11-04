@@ -1,16 +1,16 @@
-object Main extends App {
-
+@main
+def main() =
   var database = collection.mutable.ListBuffer.empty[String]
 
-  val itemsTotal = ustats.gauge("items_total")
+  val itemsTotal = ustats.global.gauge("items_total")
 
-  ustats.probe("query_database", 10){
-    val l = database.length
+  ustats.global.probe("query_database", 10){
+    val l = synchronized {database.length}
     if (l > 5) sys.error("random failure")
     itemsTotal.set(l)
   }
 
-  ustats.server.start("localhost", 8081)
+  ustats.server.global.start("localhost", 8081)
 
   println("Go to http://localhost:8081/metrics to see current metrics.")
   println("Ctrl+D to exit")
@@ -25,4 +25,3 @@ object Main extends App {
   }
 
   println("bye")
-}

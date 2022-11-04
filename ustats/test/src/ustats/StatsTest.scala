@@ -4,13 +4,13 @@ import utest._
 
 object Test extends TestSuite {
 
-  def withStats(fct: Stats => Unit) = {
-    fct(new Stats())
+  def withMetrics(fct: Metrics => Unit) = {
+    fct(new Metrics())
   }
 
   val tests = Tests {
     test("basic") {
-      withStats { s =>
+      withMetrics { s =>
         val myFirstCounter =
           s.counter(
             "my_first_counter",
@@ -25,7 +25,7 @@ object Test extends TestSuite {
       }
     }
     test("many blocks") {
-      withStats { s =>
+      withMetrics { s =>
         // this tests that there are no logic errors when traversing metrics split
         // over several blocks
         for (i <- 0 until 1000) {
@@ -36,7 +36,7 @@ object Test extends TestSuite {
         s.metrics(false) ==> expected
       }
     }
-    test("histogram")(withStats { s =>
+    test("histogram")(withMetrics { s =>
       val myHist = s.histogram("my_hist", buckets = Seq(0, 1, 2))
       myHist.observe(0.5)
       myHist.observe(1.5)
@@ -55,7 +55,7 @@ object Test extends TestSuite {
     })
     test("types") {
       test("counter") {
-        withStats { s =>
+        withMetrics { s =>
           val myFirstCounter = s.counter("my_first_counter")
           s.metrics() ==> """|# TYPE my_first_counter counter
                              |my_first_counter 0.0
@@ -63,7 +63,7 @@ object Test extends TestSuite {
         }
       }
       test("gauge") {
-        withStats { s =>
+        withMetrics { s =>
           val megaGauge = s.gauge("mega_gauge")
           s.metrics() ==> """|# TYPE mega_gauge gauge
                              |mega_gauge 0.0
@@ -71,7 +71,7 @@ object Test extends TestSuite {
         }
       }
       test("histogram") {
-        withStats { s =>
+        withMetrics { s =>
           val myHist = s.histogram("my_hist", buckets = Seq(0, 1, 2))
           s.metrics() ==> """|# TYPE my_hist histogram
                              |my_hist_bucket{le="0.0"} 0.0
@@ -85,7 +85,7 @@ object Test extends TestSuite {
       }
     }
     test("help") {
-      withStats { s =>
+      withMetrics { s =>
         val myFirstCounter =
           s.counter("my_first_counter", help = "some random counter")
         s.metrics() ==> """|# HELP my_first_counter some random counter
@@ -95,8 +95,8 @@ object Test extends TestSuite {
       }
     }
     test("labels") {
-      withStats { s =>
-        val c = s.counters("some_counter", labels = Seq("l1", "l2"))
+      withMetrics { s =>
+        val c = s.counters("some_counter").labelled("l1", "l2")
         s.metrics(false) ==> ""
 
         intercept[IllegalArgumentException] {
@@ -108,12 +108,13 @@ object Test extends TestSuite {
 
         c.labelled(1, 2)
         s.metrics(false) ==> "some_counter{l1=\"1\", l2=\"2\"} 0.0\n"
-        c.labelled(1, 2) += 1
+        c(l1 = 1, l2 = 2) += 1
         s.metrics(false) ==> "some_counter{l1=\"1\", l2=\"2\"} 1.0\n"
+        c.labelled(1, 2) += 1
+        s.metrics(false) ==> "some_counter{l1=\"1\", l2=\"2\"} 2.0\n"
 
         c.labelled(2, 2) += 1
-        s.metrics(false) ==> "some_counter{l1=\"1\", l2=\"2\"} 1.0\nsome_counter{l1=\"2\", l2=\"2\"} 1.0\n"
-
+        s.metrics(false) ==> "some_counter{l1=\"1\", l2=\"2\"} 2.0\nsome_counter{l1=\"2\", l2=\"2\"} 1.0\n"
       }
     }
   }

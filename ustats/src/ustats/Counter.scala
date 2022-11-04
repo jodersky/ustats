@@ -1,6 +1,6 @@
 package ustats
 
-import java.util.concurrent.atomic.DoubleAdder
+import types.DoubleAdder
 
 /** A counter may only ever be increased (or reset when the application restarts). */
 class Counter(private val adder: DoubleAdder) extends AnyVal {

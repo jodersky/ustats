@@ -1,10 +1,9 @@
 import $file.jmh
 import jmh.Jmh
-import mill._, scalalib._, scalafmt._, publish._
+import mill._, scalalib._, scalafmt._, publish._, scalanativelib._
 
-val scala213 = "2.13.7"
-val scala3 = "3.0.2"
-val dottyCustomVersion = Option(sys.props("dottyVersion"))
+val scala3 = "3.1.2"
+val scalaNative = "0.4.5"
 
 trait Publish extends PublishModule {
   def publishVersion = "0.5.0"
@@ -21,76 +20,67 @@ trait Publish extends PublishModule {
 }
 
 trait Utest extends ScalaModule with TestModule {
-  def ivyDeps = Agg(ivy"com.lihaoyi::utest:0.7.10")
+  def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.7.11")
   def testFramework = "utest.runner.Framework"
 }
 
-class UstatsModule(val crossScalaVersion: String)
-    extends CrossScalaModule
+trait UstatsModule
+    extends ScalaModule
     with ScalafmtModule
     with Publish {
+  def scalaVersion = scala3
   def artifactName = "ustats"
-  object test extends Tests with Utest
-  // FIXME: scaladoc 3 is not supported by mill yet. Remove the override
-  // once it is.
-  override def docJar =
-    if (crossScalaVersion.startsWith("2")) super.docJar
-    else T {
-      val outDir = T.ctx().dest
-      val javadocDir = outDir / 'javadoc
-      os.makeDir.all(javadocDir)
-      mill.api.Result.Success(mill.modules.Jvm.createJar(Agg(javadocDir))(outDir))
-    }
+  def ivyDeps = Agg(
+    ivy"com.lihaoyi::geny::1.0.0"
+  )
 }
 
-object ustats extends Cross[UstatsModule]((Seq(scala213, scala3) ++ dottyCustomVersion): _*) {
+object ustats extends Module {
 
-  class UstatsServerModule(val crossScalaVersion: String)
-      extends CrossScalaModule
-      with ScalafmtModule
-      with Publish {
-    def artifactName = "ustats-server"
-    def moduleDeps = Seq(ustats(crossScalaVersion))
+  object jvm extends UstatsModule {
+    override def millSourcePath = super.millSourcePath / os.up
+    def sources = T.sources(super.sources() ++ Seq(PathRef(millSourcePath / "src-jvm")))
+    object test extends Tests with Utest
+  }
+  object native extends UstatsModule with ScalaNativeModule {
+    def scalaNativeVersion = scalaNative
+    override def millSourcePath = super.millSourcePath / os.up
+    def sources = T.sources(super.sources() ++ Seq(PathRef(millSourcePath / "src-native")))
+    object test extends Tests with Utest
+  }
+
+  object server extends ScalaModule with Publish {
+    def scalaVersion = scala3
+    def moduleDeps = Seq(ustats.jvm)
     def ivyDeps = Agg(
-      ivy"io.undertow:undertow-core:2.2.3.Final"
+      ivy"io.undertow:undertow-core:2.3.0.Final"
     )
     object test extends Tests with Utest
-    // FIXME: scaladoc 3 is not supported by mill yet. Remove the override
-    // once it is.
-    override def docJar =
-      if (crossScalaVersion.startsWith("2")) super.docJar
-      else T {
-        val outDir = T.ctx().dest
-        val javadocDir = outDir / 'javadoc
-        os.makeDir.all(javadocDir)
-        mill.api.Result.Success(mill.modules.Jvm.createJar(Agg(javadocDir))(outDir))
-      }
   }
-  object server extends Cross[UstatsServerModule]((Seq(scala213, scala3) ++ dottyCustomVersion): _*)
 
 }
 
 object benchmark extends ScalaModule with Jmh {
-  def scalaVersion = scala213
-  def moduleDeps = Seq(ustats(scala213))
+  def scalaVersion = scala3
+  def moduleDeps = Seq(ustats.jvm)
 }
 
 object examples extends Module {
 
   trait Example extends ScalaModule {
-    def scalaVersion = scala213
-    def moduleDeps: Seq[ScalaModule] = Seq(ustats(scala213))
+    def scalaVersion = scala3
+    def moduleDeps: Seq[ScalaModule] = Seq(ustats.jvm)
   }
 
   object cask extends Example {
     def ivyDeps = Agg(
-      ivy"com.lihaoyi::cask:0.7.9"
+      ivy"com.lihaoyi::cask:0.8.1"
     )
   }
   object cask2 extends Example {
     def ivyDeps = cask.ivyDeps
   }
   object probe extends Example {
-    def moduleDeps = Seq(ustats(scala213), ustats.server(scala213))
+    def moduleDeps = Seq(ustats.jvm, ustats.server)
   }
 }

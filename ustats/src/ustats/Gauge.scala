@@ -1,6 +1,6 @@
 package ustats
 
-import java.util.concurrent.atomic.DoubleAdder
+import types.DoubleAdder
 
 /** Gauges may be increased and decreased. */
 class Gauge(private val adder: DoubleAdder) extends AnyVal {

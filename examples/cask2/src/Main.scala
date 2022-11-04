@@ -7,7 +7,7 @@ import io.undertow.server.HttpServerExchange
 trait Timed extends cask.Main {
 
   lazy val histograms = {
-    val hs = ustats.histograms("http_requests_seconds", labels = Seq("method", "path"))
+    val hs = ustats.global.histograms("http_requests_seconds").labelled("method", "path")
 
     // prepopulate histogram with all known routes
     for {
@@ -16,7 +16,7 @@ trait Timed extends cask.Main {
         x: cask.router.EndpointMetadata[_]
       )
       m <- route.endpoint.methods
-    } hs.labelled(m, route.endpoint.path)
+    } hs(m, route.endpoint.path)
 
     hs
   }
@@ -27,15 +27,17 @@ trait Timed extends cask.Main {
     val timedHandler = new HttpHandler {
       def handleRequest(exchange: HttpServerExchange): Unit = {
         val effectiveMethod = exchange.getRequestMethod.toString.toLowerCase()
-        val endpoint = routeTries(effectiveMethod).lookup(cask.internal.Util.splitPath(exchange.getRequestPath).toList, Map())
-
-        endpoint match {
-          case None => parent.handleRequest(exchange)
-          case Some(((_,metadata), _, _)) =>
-            histograms.labelled(effectiveMethod, metadata.endpoint.path).time(
-              parent.handleRequest(exchange)
-            )
-        }
+        val endpoint = dispatchTrie.lookup(cask.internal.Util.splitPath(exchange.getRequestPath).toList, Map())
+        endpoint match
+          case None =>
+            parent.handleRequest(exchange)
+          case Some((methodMap, routeBindings, remaining)) =>
+            methodMap.get(effectiveMethod) match
+              case None => parent.handleRequest(exchange)
+              case Some((routes, metadata)) =>
+                histograms(method = effectiveMethod, path = metadata.endpoint.path).time(
+                  parent.handleRequest(exchange)
+                )
       }
     }
 
@@ -62,7 +64,7 @@ object Main extends cask.MainRoutes with Timed {
   }
 
   @cask.get("/metrics")
-  def metrics() = ustats.metrics()
+  def metrics() = ustats.global.metrics()
 
   initialize()
 

@@ -34,8 +34,8 @@ object ServerTest extends TestSuite {
   }
 
 
-  val stats = new ustats.Stats
-  val server = ustats.MetricsServer(stats)
+  val stats = new ustats.Metrics
+  val server = ustats.server.MetricsServer(stats)
   val http = server.start("localhost", 10000)
   val tests = Tests {
     test("invalid path") {

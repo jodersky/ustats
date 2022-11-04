@@ -4,18 +4,12 @@
 [![ustats Scala version support](https://index.scala-lang.org/jodersky/ustats/ustats/latest.svg)](https://index.scala-lang.org/jodersky/ustats/ustats)
 [![stability: soft](https://img.shields.io/badge/stability-soft-white)](https://www.crashbox.io/stability.html)
 
-A simple and intuitive metrics collection library for Prometheus.
-
-## Highlights
-
-- ease of use: *does what you want it to do without any setup ceremony*
-
-- efficiency: *light memory footprint and extremely fast*
+A simple and intuitive metrics collection library.
 
 ## Getting Started
 
-ustats is available from maven central (for Scala 2.13 and Dotty). Add its
-coordinates to your build config:
+μstats is available from maven central for Scala 3.1 and above, for the JVM and
+Scala Native. Add its coordinates to your build config:
 
 - mill: `ivy"io.crashbox::ustats:<latest_version>"`
 - sbt: `"io.crashbox" %% "ustats" % "<latest_version>"`
@@ -28,10 +22,10 @@ where `<latest_version>` is
 Basic example, create a counter using the default collector:
 
 ```scala
-val myCounter = ustats.counter("my_counter", "This is just a simple counter.")
+val myCounter = ustats.global.counter("my_counter", "This is just a simple counter.")
 myCounter += 1
 
-println(ustats.metrics())
+println(ustats.global.metrics())
 
 // # HELP my_counter This is just a simple counter.
 // # TYPE my_counter counter
@@ -41,11 +35,11 @@ println(ustats.metrics())
 You can also add label-value pairs to individual metrics:
 
 ```scala
-val myGauge = ustats.gauge("my_gauge", labels = Seq("label1" -> "foo", "label2" -> 42))
+val myGauge = ustats.global.gauge("my_gauge", labels = Seq("label1" -> "foo", "label2" -> 42))
 myGauge += 1
 myGauge += 2
 
-println(ustats.metrics())
+println(ustats.global.metrics())
 // # TYPE my_counter gauge
 // my_gauge{label1="foo", label2="42"} 3.0
 ```
@@ -54,27 +48,27 @@ However, you'd usually want to declare one metric sharing a common basename, and
 add labels on demand:
 
 ```scala
-val queueSizes = ustats.gauges("queue_size", labels = Seq("queue_name"))
+val queueSizes = ustats.global.gauges("queue_size").labelled("queue_name")
 
-queueSizes.labelled("queue1") += 10
-queueSizes.labelled("queue1") -= 1
-queueSizes.labelled("queue2") += 2
+queueSizes(queue_name = "queue1") += 10
+queueSizes(queue_name = "queue1") -= 1
+queueSizes(queue_name = "queue2") += 2
 
-println(ustats.metrics())
+println(ustats.global.metrics())
 // # TYPE queue_size gauge
 // queue_size{queue_name="queue1"} 9.0
 // queue_size{queue_name="queue2"} 2.0
 ```
 
-Use your own collector:
+User-defined grouping of metrics:
 
 ```scala
-val collector = new ustats.Stats()
+val mymetrics = ustats.Metrics()
 
-val currentUsers = collector.gauge("my_app_current_users")
+val currentUsers = mymetrics.gauge("my_app_current_users")
 currentUsers += 10
 currentUsers -= 1
-println(collector.metrics())
+println(mymetrics.metrics())
 ```
 
 ## Probing
@@ -85,22 +79,14 @@ modifying it. ustats has a builtin "probe" mechanism to run batch jobs
 repeatedly at customizable intervals.
 
 ```scala
-val counter1 = ustats.counter("counter1")
-val gauge1 = ustats.gauge("gauge1")
+val counter1 = ustats.global.counter("counter1")
+val gauge1 = ustats.global.gauge("gauge1")
 
 // run this action every 10 seconds
-ustats.probe("query_database", 10){
+ustats.global.probe("query_database", 10){
   // query database
   counter1 += 1
   gauge1.set(42)
-}
-
-// also works with async code
-ustats.probe.async("query_database", 10) { implicit ec =>
-  val f: Future[_] = // something that returns a Future[_]
-  f.map{ _ =>
-    counter1 += 1
-  }
 }
 ```
 
@@ -117,11 +103,11 @@ over HTTP, under the standard `/metrics` endpoint. The server module is based on
 
 ```scala
 // global server for global stats
-ustats.server.start("localhost", 10000)
+ustats.server.global.start("localhost", 10000)
 
 // custom server for custom stats
-val stats = new ustats.Stats()
-val server = new ustats.MetricsServer(stats)
+val metrics = ustats.Metrics()
+val server = ustats.server.MetricsServer(metrics)
 server.start("localhost", 10000)
 ```
 

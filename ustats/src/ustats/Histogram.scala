@@ -1,6 +1,6 @@
 package ustats
 
-import java.util.concurrent.atomic.DoubleAdder
+import types.DoubleAdder
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 

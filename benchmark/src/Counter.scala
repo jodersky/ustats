@@ -6,7 +6,7 @@ import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Mode, OutputTimeUn
 
 @State(Scope.Benchmark)
 class state {
-  val collector = new Stats()
+  val collector = new Metrics()
 
   val counter = collector.counter("counter")
 }

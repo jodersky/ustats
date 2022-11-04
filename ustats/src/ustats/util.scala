@@ -15,13 +15,29 @@ object util {
     snake.result()
   }
 
-  def labelify(baseName: String, labels: Seq[(String, Any)]): String =
+  def labelify(baseName: String, labels: Iterable[(String, Any)]): String =
     if (labels.isEmpty) {
       baseName
     } else {
-      baseName + labels
-        .map { case (key, value) => s"""$key="$value"""" }
-        .mkString("{", ", ", "}")
+      val it = labels.iterator
+      val b = new StringBuilder
+      b ++= baseName
+      b += '{'
+
+      val (key, value) = it.next()
+      b ++= key
+      b ++= "=\""
+      b ++= value.toString
+      b += '"'
+      while it.hasNext do
+        val (key, value) = it.next()
+        b ++= ", "
+        b ++= key
+        b ++= "=\""
+        b ++= value.toString
+        b += '"'
+      b += '}'
+      b.result()
     }
 
 }
