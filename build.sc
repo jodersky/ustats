@@ -6,7 +6,7 @@ val scala3 = "3.1.2"
 val scalaNative = "0.4.5"
 
 trait Publish extends PublishModule {
-  def publishVersion = "0.5.0"
+  def publishVersion = "0.6.0"
   def pomSettings = PomSettings(
     description = "Simple metrics collection",
     organization = "io.crashbox",
